@@ -42,8 +42,8 @@ def check_tokens():
                 f'Потерян токен:{name}'
             )
             tokens_bool = False
-            raise ValueError(f'Потерян токен:{name}')
-        return tokens_bool
+    if not tokens_bool:
+        raise ValueError(f'Потерян токен:{name}')
     return tokens_bool
 
 
