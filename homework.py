@@ -44,7 +44,6 @@ def check_tokens():
             tokens_bool = False
     if not tokens_bool:
         raise ValueError(f'Потерян токен:{name}')
-    return tokens_bool
 
 
 def send_message(bot, message):
