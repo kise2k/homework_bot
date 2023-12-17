@@ -74,9 +74,10 @@ def get_api_answer(timestamp):
         homework_statuses = requests.get(**parametrs)
         if homework_statuses.status_code != HTTPStatus.OK:
             raise TheAnswerIsNot200Error(
-                'код ошибки: {status_code} \
-                причина ошибки: {reason} \
-                текст ошибки: {text}'.format(**homework_statuses))
+                f'код ошибки: {homework_statuses.status_code}'
+                f'причина ошибки: {homework_statuses.reason}'
+                f'текст ошибки: {homework_statuses.text}'
+            )
     except requests.RequestException:
         raise ConnectionError(
             'ошибка параметров {url}, {headers}, {params}'.format(**parametrs)
