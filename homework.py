@@ -5,10 +5,9 @@ from http import HTTPStatus
 
 import requests
 import telegram
-
 from dotenv import load_dotenv
+
 from exceptions import (TheAnswerIsNot200Error,
-                        EmptyOrUsellesStatusHomework,
                         EmptyResponseFromApi)
 
 load_dotenv()
@@ -71,15 +70,17 @@ def get_api_answer(timestamp):
         'headers': HEADERS,
         'params': params,
     }
-    logging.info(f'Попытка сделать запрос c {parametrs.values()}')
+    logging.info('запрос {url} c {headers} и {params}'.format(**parametrs))
     try:
         homework_statuses = requests.get(**parametrs)
         if homework_statuses.status_code != HTTPStatus.OK:
-            raise TheAnswerIsNot200Error(f'эндпойнт API не доступен из за '
-                                         f'{homework_statuses.status_code}')
-    except requests.RequestException as request_error:
+            raise TheAnswerIsNot200Error(
+                'код ошибки: {status_code} \
+                причина ошибки: {reason} \
+                текст ошибки: {text}'.format(**homework_statuses))
+    except requests.RequestException:
         raise ConnectionError(
-            f'Код ответа API (RequestException): {request_error}'
+            'ошибка параметров {url}, {headers}, {params}'.format(**parametrs)
         )
     return homework_statuses.json()
 
@@ -99,12 +100,14 @@ def check_response(response):
 def parse_status(homework):
     """Функция для вывода информации о конкретной работе."""
     if 'homework_name' not in homework:
-        raise EmptyOrUsellesStatusHomework(
-            'сбой отсутсвие значения статуса работы'
+        raise ValueError(
+            'сбой значение имени работы нет в работах'
         )
+    if 'status' not in homework:
+        raise ValueError('сбой значение статуса отсутствует')
     status = homework['status']
-    if status not in HOMEWORK_VERDICTS or status is None:
-        raise EmptyOrUsellesStatusHomework(
+    if status not in HOMEWORK_VERDICTS:
+        raise ValueError(
             'сбой неожиданное значение статуса работы'
         )
     homework_name = homework['homework_name']
@@ -117,41 +120,46 @@ def main():
     check_tokens()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = 0
-    empty_message = ''
+    last_message = ''
     while True:
         try:
             response = get_api_answer(timestamp)
             homeworks = check_response(response)
-            if homeworks is not None:
+            if homeworks:
                 homework = homeworks[0]
                 message = parse_status(homework)
-            if message != empty_message:
-                if send_message(bot, message) is True:
-                    empty_message = message
-                    timestamp = response.get('current_date')
             else:
-                empty_message = 'Нет новых статусов!'
-                logging.info('Нет новых статусов')
+                homework = homeworks[0]
+                message = 'Нет новых статусов!'
+            if message != last_message:
+                if send_message(bot, message):
+                    last_message = message
+                    timestamp = response.get('current_date', timestamp)
+            else:
+                logging.info(message)
         except EmptyResponseFromApi as error:
             logging.error(f'Пустой ответ от API {error}')
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            logging.error(message)
-            if message != empty_message:
+            logging.exception(message)
+            if message != last_message:
                 send_message(bot, message)
-                empty_message = message
+                last_message = message
         finally:
             time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
-    file_handler = logging.FileHandler(__file__ + '.log', mode='w')
+    file_handler = logging.FileHandler(
+        __file__ + '.log',
+        mode='w',
+        encoding='UTF-8'
+    )
     stream_handler = logging.StreamHandler()
     handlers = [file_handler, stream_handler]
     logging.basicConfig(
-        format='''
-        %(asctime)s - %(name)s - %(levelname)s - %(message)s - Line %(lineno)d
-        ''',
+        format='%(asctime)s - %(name)s - %(levelname)s \
+          - %(message)s - Line %(lineno)d',
         level=logging.INFO,
         handlers=handlers,
     )

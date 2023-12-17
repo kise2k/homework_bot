@@ -17,9 +17,3 @@ class EmptyResponseFromApi(Exception):
     """Пустой ответ от API."""
 
     pass
-
-
-class EmptyOrUsellesStatusHomework(Exception):
-    """Пустой ответ от API."""
-
-    pass
