@@ -37,7 +37,7 @@ def check_tokens():
         ('TELEGRAM_CHAT_ID', TELEGRAM_CHAT_ID),
     )
     for name, token in TOKENS:
-        if token is None:
+        if not token:
             logging.critical(
                 f'Потерян токен:{name}'
             )
@@ -74,9 +74,9 @@ def get_api_answer(timestamp):
         homework_statuses = requests.get(**parametrs)
         if homework_statuses.status_code != HTTPStatus.OK:
             raise TheAnswerIsNot200Error(
-                f'код ошибки: {homework_statuses.status_code}'
-                f'причина ошибки: {homework_statuses.reason}'
-                f'текст ошибки: {homework_statuses.text}'
+                'код ошибки: {status_code} \
+                причина ошибки: {reason} \
+                текст ошибки: {text}'.format(**parametrs)
             )
     except requests.RequestException:
         raise ConnectionError(
@@ -129,7 +129,6 @@ def main():
                 homework = homeworks[0]
                 message = parse_status(homework)
             else:
-                homework = homeworks[0]
                 message = 'Нет новых статусов!'
             if message != last_message:
                 if send_message(bot, message):
