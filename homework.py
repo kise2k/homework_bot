@@ -76,7 +76,7 @@ def get_api_answer(timestamp):
             raise TheAnswerIsNot200Error(
                 'код ошибки: {status_code} \
                 причина ошибки: {reason} \
-                текст ошибки: {text}'.format(**parametrs)
+                текст ошибки: {text}'.format(**homework_statuses)
             )
     except requests.RequestException:
         raise ConnectionError(
